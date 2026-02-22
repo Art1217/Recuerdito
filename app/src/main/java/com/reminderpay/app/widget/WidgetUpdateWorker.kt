@@ -4,79 +4,92 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.widget.RemoteViews
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.reminderpay.app.R
-import com.reminderpay.app.data.repository.ReminderRepository
+import com.reminderpay.app.data.database.AppDatabase
 import com.reminderpay.app.utils.Constants
 import com.reminderpay.app.utils.DateUtils
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
+import java.util.concurrent.TimeUnit
 
 /**
- * WorkManager worker that refreshes RemoteViews for all active ReminderPay widgets.
- * Reads the next [Constants.WIDGET_MAX_ITEMS] reminders from Room and updates the widget.
+ * Plain CoroutineWorker that reads Room directly (no Hilt dependency)
+ * and pushes updated RemoteViews to all active ReminderPay widget instances.
  */
-@HiltWorker
-class WidgetUpdateWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val repository: ReminderRepository
+class WidgetUpdateWorker(
+    context: Context,
+    workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val reminders = repository.getUpcomingRemindersList()
-            .take(Constants.WIDGET_MAX_ITEMS)
+        return try {
+            val db        = AppDatabase.getDatabase(applicationContext)
+            val reminders = db.reminderDao().getUpcomingRemindersList().take(Constants.WIDGET_MAX_ITEMS)
 
-        val views = RemoteViews(applicationContext.packageName, R.layout.reminder_widget)
+            val views = RemoteViews(applicationContext.packageName, R.layout.reminder_widget)
 
-        if (reminders.isEmpty()) {
-            // Show empty state
-            views.setTextViewText(R.id.widget_item1_title, "No tienes recordatorios próximos")
-            views.setTextViewText(R.id.widget_item1_date, "")
-            views.setTextViewText(R.id.widget_item1_remaining, "")
-            views.setViewVisibility(R.id.widget_item2_layout, android.view.View.GONE)
-            views.setViewVisibility(R.id.widget_item3_layout, android.view.View.GONE)
-        } else {
-            reminders.forEachIndexed { index, reminder ->
-                val due       = DateUtils.combineDateAndTime(reminder.date, reminder.time)
-                val remaining = DateUtils.formatTimeRemaining(due - System.currentTimeMillis())
-                val dateLabel = DateUtils.formatFull(due)
-
-                when (index) {
-                    0 -> {
-                        views.setTextViewText(R.id.widget_item1_title, reminder.title)
-                        views.setTextViewText(R.id.widget_item1_date, dateLabel)
-                        views.setTextViewText(R.id.widget_item1_remaining, remaining)
-                        views.setViewVisibility(R.id.widget_item1_layout, android.view.View.VISIBLE)
-                    }
-                    1 -> {
-                        views.setTextViewText(R.id.widget_item2_title, reminder.title)
-                        views.setTextViewText(R.id.widget_item2_date, dateLabel)
-                        views.setTextViewText(R.id.widget_item2_remaining, remaining)
-                        views.setViewVisibility(R.id.widget_item2_layout, android.view.View.VISIBLE)
-                    }
-                    2 -> {
-                        views.setTextViewText(R.id.widget_item3_title, reminder.title)
-                        views.setTextViewText(R.id.widget_item3_date, dateLabel)
-                        views.setTextViewText(R.id.widget_item3_remaining, remaining)
-                        views.setViewVisibility(R.id.widget_item3_layout, android.view.View.VISIBLE)
-                    }
+            if (reminders.isEmpty()) {
+                views.setTextViewText(R.id.widget_item1, "Sin recordatorios próximos")
+                views.setTextViewText(R.id.widget_item2, "")
+                views.setTextViewText(R.id.widget_item3, "")
+            } else {
+                reminders.getOrNull(0)?.let { r ->
+                    val due = DateUtils.combineDateAndTime(r.date, r.time)
+                    val rem = DateUtils.formatTimeRemaining(due - System.currentTimeMillis())
+                    views.setTextViewText(R.id.widget_item1, "• ${r.title}  $rem")
                 }
+                reminders.getOrNull(1)?.let { r ->
+                    val due = DateUtils.combineDateAndTime(r.date, r.time)
+                    val rem = DateUtils.formatTimeRemaining(due - System.currentTimeMillis())
+                    views.setTextViewText(R.id.widget_item2, "• ${r.title}  $rem")
+                } ?: views.setTextViewText(R.id.widget_item2, "")
+
+                reminders.getOrNull(2)?.let { r ->
+                    val due = DateUtils.combineDateAndTime(r.date, r.time)
+                    val rem = DateUtils.formatTimeRemaining(due - System.currentTimeMillis())
+                    views.setTextViewText(R.id.widget_item3, "• ${r.title}  $rem")
+                } ?: views.setTextViewText(R.id.widget_item3, "")
             }
-            // Hide slots for missing reminders
-            if (reminders.size < 2) views.setViewVisibility(R.id.widget_item2_layout, android.view.View.GONE)
-            if (reminders.size < 3) views.setViewVisibility(R.id.widget_item3_layout, android.view.View.GONE)
+
+            val manager   = AppWidgetManager.getInstance(applicationContext)
+            val widgetIds = manager.getAppWidgetIds(
+                ComponentName(applicationContext, ReminderWidgetProvider::class.java)
+            )
+            if (widgetIds.isNotEmpty()) {
+                manager.updateAppWidget(widgetIds, views)
+            }
+            Result.success()
+        } catch (e: Exception) {
+            Result.failure()
+        }
+    }
+
+    companion object {
+        fun enqueue(context: Context) {
+            val request = OneTimeWorkRequestBuilder<WidgetUpdateWorker>()
+                .addTag(Constants.WIDGET_UPDATE_WORKER_TAG)
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "widget_one_time_update",
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
         }
 
-        // Push updated views to all widget instances
-        val manager    = AppWidgetManager.getInstance(applicationContext)
-        val widgetIds  = manager.getAppWidgetIds(
-            ComponentName(applicationContext, ReminderWidgetProvider::class.java)
-        )
-        manager.updateAppWidget(widgetIds, views)
-
-        return Result.success()
+        fun scheduleRepeating(context: Context) {
+            val request = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(30, TimeUnit.MINUTES)
+                .addTag(Constants.WIDGET_UPDATE_WORKER_TAG)
+                .build()
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                Constants.WIDGET_UPDATE_WORKER_TAG,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
     }
 }

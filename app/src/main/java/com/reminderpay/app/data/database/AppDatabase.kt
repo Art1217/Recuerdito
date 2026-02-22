@@ -22,5 +22,24 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "reminder_pay_db"
+
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        /**
+         * Returns the singleton [AppDatabase] instance.
+         * Used by workers that cannot use Hilt injection (e.g. WidgetUpdateWorker).
+         */
+        fun getDatabase(context: Context): AppDatabase =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    DATABASE_NAME
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
+            }
     }
 }
