@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ReminderPay</string>
+    <string name="widget_title">Próximos recordatorios</string>
+    <string name="no_reminders">No tienes recordatorios próximos</string>
+</resources>
