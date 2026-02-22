@@ -27,7 +27,7 @@ data class Reminder(
     /**
      * Category: Payment, Personal, Work, Study, Other
      */
-    val category: String = ReminderCategory.OTHER,
+    val category: String = ReminderCategory.OTRO,
 
     /**
      * Type label (e.g., "Bill", "Event", "Task", "Birthday")
@@ -51,33 +51,46 @@ data class Reminder(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-/** Available reminder categories */
+/** Available reminder categories (in Spanish) */
 object ReminderCategory {
-    const val PAYMENT = "Payment"
-    const val PERSONAL = "Personal"
-    const val WORK = "Work"
-    const val STUDY = "Study"
-    const val OTHER = "Other"
+    // ── Pagos específicos ──────────────────────────────────────────────────────
+    const val PAGO_LUZ         = "Pago Luz"
+    const val PAGO_AGUA        = "Pago Agua"
+    const val PAGO_INTERNET    = "Pago Internet"
+    const val PAGO_GAS         = "Pago Gas"
+    const val PAGO_UNIVERSIDAD = "Pago Universidad"
+    // ── Otras categorías ──────────────────────────────────────────────────────
+    const val PERSONAL         = "Personal"
+    const val TRABAJO          = "Trabajo"
+    const val ESTUDIO          = "Estudio"
+    const val OTRO             = "Otro"
 
-    val all = listOf(PAYMENT, PERSONAL, WORK, STUDY, OTHER)
+    val all = listOf(
+        PAGO_LUZ, PAGO_AGUA, PAGO_INTERNET, PAGO_GAS, PAGO_UNIVERSIDAD,
+        PERSONAL, TRABAJO, ESTUDIO, OTRO
+    )
+
+    /** Returns true if this category is a payment type */
+    fun isPayment(category: String) = category.startsWith("Pago")
 }
 
 /** Repeat schedule options */
 object RepeatType {
-    const val NONE = "None"
-    const val WEEKLY = "Weekly"
-    const val MONTHLY = "Monthly"
-    const val YEARLY = "Yearly"
+    const val NONE     = "Sin repetición"
+    const val WEEKLY   = "Semanal"
+    const val MONTHLY  = "Mensual"
+    const val YEARLY   = "Anual"
 
     val all = listOf(NONE, WEEKLY, MONTHLY, YEARLY)
 }
 
 /** Reminder status values */
 object ReminderStatus {
-    const val ACTIVE = "Active"
+    const val ACTIVE    = "Active"
     const val COMPLETED = "Completed"
     const val CANCELLED = "Cancelled"
 }
+
 
 /**
  * Priority classification computed at runtime based on time until due.

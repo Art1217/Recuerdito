@@ -19,7 +19,7 @@ data class AddEditUiState(
     val description: String = "",
     val date: Long = System.currentTimeMillis(),
     val time: Long = System.currentTimeMillis(),
-    val category: String = ReminderCategory.OTHER,
+    val category: String = ReminderCategory.OTRO,
     val type: String = "Task",
     val repeatType: String = RepeatType.NONE,
     val notifyDaysBefore: Int = 1,

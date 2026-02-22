@@ -42,20 +42,29 @@ fun reminderPriorityBgColor(reminder: Reminder): Color {
 }
 
 fun categoryColor(category: String): Color = when (category) {
-    ReminderCategory.PAYMENT  -> PaymentColor
-    ReminderCategory.PERSONAL -> PersonalColor
-    ReminderCategory.WORK     -> WorkColor
-    ReminderCategory.STUDY    -> StudyColor
-    else                      -> OtherColor
+    ReminderCategory.PAGO_LUZ         -> Color(0xFFFDD835) // amarillo eléctrico
+    ReminderCategory.PAGO_AGUA        -> Color(0xFF039BE5) // azul agua
+    ReminderCategory.PAGO_INTERNET    -> Color(0xFF7B1FA2) // morado internet
+    ReminderCategory.PAGO_GAS         -> Color(0xFFE64A19) // naranja gas
+    ReminderCategory.PAGO_UNIVERSIDAD -> Color(0xFF1565C0) // azul universitario
+    ReminderCategory.PERSONAL         -> Color(0xFF6A1B9A) // violeta personal
+    ReminderCategory.TRABAJO          -> Color(0xFF00695C) // verde trabajo
+    ReminderCategory.ESTUDIO          -> Color(0xFF2E7D32) // verde estudio
+    else                              -> Color(0xFF546E7A) // gris otro
 }
 
 fun categoryIcon(category: String) = when (category) {
-    ReminderCategory.PAYMENT  -> Icons.Default.CreditCard
-    ReminderCategory.PERSONAL -> Icons.Default.Person
-    ReminderCategory.WORK     -> Icons.Default.Work
-    ReminderCategory.STUDY    -> Icons.Default.MenuBook
-    else                      -> Icons.Default.Label
+    ReminderCategory.PAGO_LUZ         -> Icons.Default.Bolt
+    ReminderCategory.PAGO_AGUA        -> Icons.Default.Water
+    ReminderCategory.PAGO_INTERNET    -> Icons.Default.Wifi
+    ReminderCategory.PAGO_GAS         -> Icons.Default.LocalFireDepartment
+    ReminderCategory.PAGO_UNIVERSIDAD -> Icons.Default.School
+    ReminderCategory.PERSONAL         -> Icons.Default.Person
+    ReminderCategory.TRABAJO          -> Icons.Default.Work
+    ReminderCategory.ESTUDIO          -> Icons.Default.MenuBook
+    else                              -> Icons.Default.Label
 }
+
 
 // ─── ReminderCard ─────────────────────────────────────────────────────────────
 
