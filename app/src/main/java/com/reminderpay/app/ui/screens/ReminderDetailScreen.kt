@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -87,8 +88,13 @@ fun ReminderDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // ── Priority / time remaining banner ──────────────────────
-                    val priorityColor = reminderPriorityColor(reminder)
-                    val prioBg        = reminderPriorityBgColor(reminder)
+                    val priorityColor = when {
+                        diff < 0                        -> Color(0xFFEF4444)
+                        diff <= DateUtils.HOURS_24_MS   -> Color(0xFFF97316)
+                        diff <= DateUtils.DAYS_3_MS     -> Color(0xFFF59E0B)
+                        else                            -> Color(0xFF10B981)
+                    }
+                    val prioBg = priorityColor.copy(alpha = 0.12f)
 
                     Surface(
                         shape = RoundedCornerShape(16.dp),

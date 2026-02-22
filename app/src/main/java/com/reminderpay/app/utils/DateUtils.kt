@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
  */
 object DateUtils {
 
+    const val HOURS_1_MS  = 1L  * 60 * 60 * 1000
     const val HOURS_24_MS = 24L * 60 * 60 * 1000
     const val DAYS_3_MS   = 3L  * 24 * 60 * 60 * 1000
 
